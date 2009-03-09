@@ -13,7 +13,7 @@ using namespace cimg_library;
 using namespace std;
 
 
-//#define TEST
+#define TEST
 #define INF 100000000
 #define diff(img, x1, y1, x2, y2) pow(img(x1,y1) - img(x2,y2),2)
 
@@ -49,16 +49,16 @@ void compute_sigmas(CImg<double> &image, CImg<double> &sigmas)
 		for (int j=0; j<h; ++j)
 		{
 			double sum=0;
-			int xmax = min(w-1, i+7);
-			int ymax = min(h-1, j+7);
-			int xmin = max(0,i-7);
-			int ymin = max(0,j-7);
+			int xmax = min(w-1, i+10);
+			int ymax = min(h-1, j+10);
+			int xmin = max(0,i-10);
+			int ymin = max(0,j-10);
 
 			for (int x=xmin; x<xmax; ++x)
 			{
 				for (int y=ymin; y<ymax; ++y)
 				{
-					double tmp = image(x,y,0);
+					double tmp = image(x,y);
 
 					sum += abs(tmp-image(x+1,y));
 					sum += abs(tmp-image(x,y+1));
@@ -66,6 +66,7 @@ void compute_sigmas(CImg<double> &image, CImg<double> &sigmas)
 			}
 
 			sigmas(i,j) = sum / (2*(xmax-xmin)*(ymax-ymin));
+
 		}
 	}
 
@@ -184,7 +185,11 @@ inline void draw_edges_image_data(GraphType &G, CImg<double> &image,
 			sigma = sigma_hard;
 		else
 			sigma = sigmas(x1, y1);
+
 		double weight = lambda * exp(-diff(image, x1, y1, x2, y2)/(2*sigma*sigma)) / dist;
+		if (sigma == 0)
+			weight = 0;
+
 		G.add_edge(y1*nx+x1, y2*nx+x2, weight, weight);	//Voisin du haut
 	}
 }
@@ -193,14 +198,13 @@ inline void draw_edges_image_data(GraphType &G, CImg<double> &image,
 
 int main( int argc, char *argv[]  )
 {
-
 	CImg<double> image;
 	CImg<double> mask;
 
 	//Algo parameters
 	double lambda;
-	double sigma;
-	double beta;
+	double sigma = 0;
+	//double beta;
 	bool auto_background;
 	bool star_shape_prior;
 
@@ -209,7 +213,7 @@ int main( int argc, char *argv[]  )
 	sigma  = atof(argv[2]);
 	beta   = atof(argv[3]);
 
-	auto_background = (atof(argv[4]) == 1);
+	auto_background  = (atof(argv[4]) == 1);
 	star_shape_prior = (atof(argv[5]) == 1);
 
 	cout << "Lambda=" << lambda << endl;
@@ -221,7 +225,7 @@ int main( int argc, char *argv[]  )
 	cout << "TEST " << endl << endl;
 	//Parameters
 	lambda = 20;
-	beta = -10;
+	//beta = -20;
 	auto_background = true;
 	star_shape_prior = true;
 
@@ -245,7 +249,6 @@ int main( int argc, char *argv[]  )
 	sigmas.save("sigmas.bmp");
 #endif
 
-
 	//Loads object.background seeds
 	std::vector<Point> object_points;
 	std::vector<Point> background_points;
@@ -257,149 +260,186 @@ int main( int argc, char *argv[]  )
 #ifdef TEST
 	//Display points coordinates
 	cout << "Object points:" << endl;
-	for (int i=0; i<object_points.size(); ++i)
+	for (unsigned int i=0; i<object_points.size(); ++i)
 		cout << object_points[i].x << " " << object_points[i].y << endl;
 	cout << endl;
 
 	cout << "Background points:" << endl;
-	for (int i=0; i<background_points.size(); ++i)
+	for (unsigned int i=0; i<background_points.size(); ++i)
 		cout << background_points[i].x << " " << background_points[i].y << endl;
 	cout << endl;
 
-	CImg<double> edges_image(w, h,2,1,0);
 #endif
 
-	// Graphe
-	cout << "Setting graph..." << endl;
+
+	//Finding optimal beta
+	double beta_min = -30;
+	double beta_max = 0;
+	int iters_max = 10;
+
+	double beta_sup = beta_max;
+	double beta_inf = beta_min;
+	double beta = (beta_sup + beta_inf)/2;
+
+	int nb_iters = 0;
 	int nx=w, ny=h;	// Sans les bords
-
-	CImg<bool> edges_status_out(w, h, 9, 1, false);
-
 	GraphType G(nx*ny,16*nx*ny);
-	G.add_node(nx*ny);
 
-
-	//Data term
-	for (int i=0; i<nx; i++)
+	while (true)
 	{
-		for (int j=0; j<ny; j++)
+		cout << "Iteration " << nb_iters << endl;
+		cout << "Beta=" << beta << endl;
+
+		// Graphe
+		cout << "Setting graph...";
+
+		G.reset();
+		G.add_node(nx*ny);
+
+		//Data term
+		for (int i=0; i<nx; i++)
 		{
-			G.add_tweights(j*nx+i, 0, 0);
+			for (int j=0; j<ny; j++)
+			{
+				G.add_tweights(j*nx+i, 0, 0);
 
-			draw_edges_image_data(G, image, i, j, i, j+1, nx, ny, lambda, sigmas, sigma, 1);	//Down
-			draw_edges_image_data(G, image, i, j, i+1, j, nx, ny, lambda, sigmas, sigma, 1);	//Right
-			draw_edges_image_data(G, image, i, j, i+1, j-1, nx, ny, lambda, sigmas, sigma, sqrt(2.));	//Top right
-			draw_edges_image_data(G, image, i, j, i+1, j+1, nx, ny, lambda, sigmas, sigma, sqrt(2.));	//Down right
+				draw_edges_image_data(G, image, i, j, i, j+1, nx, ny, lambda, sigmas, sigma, 1);	//Down
+				draw_edges_image_data(G, image, i, j, i+1, j, nx, ny, lambda, sigmas, sigma, 1);	//Right
+				draw_edges_image_data(G, image, i, j, i+1, j-1, nx, ny, lambda, sigmas, sigma, sqrt(2.));	//Top right
+				draw_edges_image_data(G, image, i, j, i+1, j+1, nx, ny, lambda, sigmas, sigma, sqrt(2.));	//Down right
 
+			}
 		}
+
+		//Seed object points
+		for (unsigned int i=0; i<object_points.size(); ++i)
+		{
+			int x = object_points[i].x;
+			int y = object_points[i].y;
+			G.add_tweights(y*nx+x, 0, INF);
+		}
+
+		//Background object points
+		for (unsigned int i=0; i<background_points.size(); ++i)
+		{
+			int x = background_points[i].x;
+			int y = background_points[i].y;
+			G.add_tweights(y*nx+x, INF, 0);
+		}
+
+
+
+		//Star shape edges
+		CImg<bool> edges_status_out(w, h, 9, 1, false);
+		int x, y;
+		for (unsigned int i=0; i<w; ++i)
+		{
+			x = i;
+			y = 0;
+			draw_line(edges_status_out, G, x, y, X, Y, nx, beta, auto_background, star_shape_prior);
+
+			x = i;
+			y = image.height - 1;
+			draw_line(edges_status_out, G, x, y, X, Y, nx, beta, auto_background, star_shape_prior);
+		}
+		for (unsigned int j=1; j<h-1; ++j)
+		{
+			x = 0;
+			y = j;
+			draw_line(edges_status_out, G, x, y, X, Y, nx, beta, auto_background, star_shape_prior);
+
+			x = image.width - 1;
+			y = j;
+			draw_line(edges_status_out, G, x, y, X, Y, nx, beta, auto_background, star_shape_prior);
+		}
+		cout << "Done." << endl;
+
+		// Coupe
+		cout << "Computing Cut..." << endl;
+		double f = G.maxflow();
+		cout << f << endl;
+
+		// Segmentation result
+		int nb_objects=0;
+		for (int j=0;j<ny;j++) {
+			for (int i=0;i<nx;i++) {
+				if (G.what_segment(j*nx+i)==GraphType::SINK)
+					nb_objects++;
+			}
+		}
+		cout << "Object contains " << nb_objects << " points" << endl << endl;
+
+		//New beta
+		if (nb_objects < 100)
+		{
+			//On baisse le beta
+			beta_inf = beta_inf;
+			beta_sup = beta;
+			beta = (beta_inf + beta)/2;
+		}
+		else
+		{
+			if (nb_iters >= iters_max)
+				break;
+
+			//On augmente le beta
+			beta_inf = beta;
+			beta_sup = beta_sup;
+			beta = (beta_sup + beta)/2;
+		}
+
+		nb_iters++;
 	}
 
 
-	//Star shape edges
-	int x, y;
-	for (unsigned int i=0; i<w; ++i)
-	{
-		x = i;
-		y = 0;
-		draw_line(edges_status_out, G, x, y, X, Y, nx, beta, auto_background, star_shape_prior);
 
-		x = i;
-		y = image.height - 1;
-		draw_line(edges_status_out, G, x, y, X, Y, nx, beta, auto_background, star_shape_prior);
-	}
-	for (unsigned int j=1; j<h-1; ++j)
-	{
-		x = 0;
-		y = j;
-		draw_line(edges_status_out, G, x, y, X, Y, nx, beta, auto_background, star_shape_prior);
-
-		x = image.width - 1;
-		y = j;
-		draw_line(edges_status_out, G, x, y, X, Y, nx, beta, auto_background, star_shape_prior);
-	}
-
-
-
-	//Seed object points
-	for (unsigned int i=0; i<object_points.size(); ++i)
-	{
-		int x = object_points[i].x;
-		int y = object_points[i].y;
-		G.add_tweights(y*nx+x, 0, INF);
-	}
-
-	//Background object points
-	for (unsigned int i=0; i<background_points.size(); ++i)
-	{
-		int x = background_points[i].x;
-		int y = background_points[i].y;
-		G.add_tweights(y*nx+x, INF, 0);
-	}
-
-
-
-	// Coupe
-	cout << "Done." << endl;
-	cout << "Computing Cut..." << endl;
-	double f = G.maxflow();
-	cout << f << endl;
-
-
-	//image = image.LabtoRGB();
-
-
-	// Segmentation result
-	int nb_objects=0;
-	CImg<int> D(nx,ny);
+	// Dessin de la zone objet
 	for (int j=0;j<ny;j++) {
 		for (int i=0;i<nx;i++) {
-			int disp = 0;
 			if (G.what_segment(j*nx+i)==GraphType::SINK)
 			{
-				disp = 255;
-				nb_objects++;
-
 				image(i,j,0) = 0;
 				image(i,j,1) = 255;
 				image(i,j,2) = 0;
-
 			}
-			D(i,j)=disp;
 		}
 	}
 
-	//Dessin du seed point
-	for (int i=-2; i<=2; ++i)
-		for (int j=-2; j<=2; ++j)
-			image(X+i, Y+j, 2) = 255;
-
 	//Dessin object points
 	for (unsigned int in=0; in<object_points.size(); ++in)
+	{
 		for (int i=-2; i<=2; ++i)
+		{
 			for (int j=-2; j<=2; ++j)
 			{
 				image(object_points[in].x+i, object_points[in].y+j, 0) = 255;
 				image(object_points[in].x+i, object_points[in].y+j, 1) = 255;
 				image(object_points[in].x+i, object_points[in].y+j, 2) = 0;
 			}
+		}
+	}
 
-			//Dessin background points
-			for (unsigned int in=0; in<background_points.size(); ++in)
-				for (int i=-2; i<=2; ++i)
-					for (int j=-2; j<=2; ++j)
-					{
-						image(background_points[in].x+i, background_points[in].y+j, 0) = 0;
-						image(background_points[in].x+i, background_points[in].y+j, 1) = 255;
-						image(background_points[in].x+i, background_points[in].y+j, 2) = 255;
-					}
+	//Dessin background points
+	for (unsigned int in=0; in<background_points.size(); ++in)
+	{
+		for (int i=-2; i<=2; ++i)
+		{
+			for (int j=-2; j<=2; ++j)
+			{
+				image(background_points[in].x+i, background_points[in].y+j, 0) = 0;
+				image(background_points[in].x+i, background_points[in].y+j, 1) = 255;
+				image(background_points[in].x+i, background_points[in].y+j, 2) = 255;
+			}
+		}
+	}
 
 
-			cout << "Object contains " << nb_objects << " points" << endl << endl;;
+
 #ifdef TEST
-			display_image(image);
+	display_image(image);
 #endif
 
-			image.save("results.bmp");
+	image.save("results.bmp");
 
-			return 0;
+	return 0;
 }
