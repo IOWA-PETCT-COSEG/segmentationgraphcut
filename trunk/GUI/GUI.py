@@ -197,7 +197,7 @@ class Principale(wx.Frame):
 
         self.sizer_params1 = wx.FlexGridSizer(cols=2, vgap=2, hgap=1)
 
-        self.largeur_patch_picker = wx.TextCtrl(self.panel, -1, "1000", size=(50, -1))
+        self.largeur_patch_picker = wx.TextCtrl(self.panel, -1, "20", size=(50, -1))
         self.largeur_patch_picker_text = wx.StaticText(self.panel, -1, u'\u03BB')
         self.largeur_patch_picker_text.SetFont(wx.Font(10, wx.ROMAN, wx.NORMAL, wx.NORMAL))
         self.sizer_params1.Add(self.largeur_patch_picker_text, 1, flag=wx.ALIGN_LEFT|wx.RIGHT, border=10)
