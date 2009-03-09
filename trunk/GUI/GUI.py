@@ -203,7 +203,7 @@ class Principale(wx.Frame):
         self.sizer_params1.Add(self.largeur_patch_picker_text, 1, flag=wx.ALIGN_LEFT|wx.RIGHT, border=10)
         self.sizer_params1.Add(self.largeur_patch_picker, 1, flag=wx.ALIGN_RIGHT)
 
-        self.largeur_voisinage_picker = wx.TextCtrl(self.panel, -1, "10", size=(50, -1))
+        self.largeur_voisinage_picker = wx.TextCtrl(self.panel, -1, "", size=(50, -1))
         self.largeur_voisinage_picker_text = wx.StaticText(self.panel, -1, u'\u03C3')
         self.largeur_voisinage_picker_text.SetFont(wx.Font(10, wx.ROMAN, wx.NORMAL, wx.NORMAL))
         self.sizer_params1.Add(self.largeur_voisinage_picker_text, 1, flag=wx.ALIGN_LEFT|wx.RIGHT, border=10)
@@ -559,6 +559,7 @@ class Principale(wx.Frame):
         self.lamb = self.largeur_patch_picker.GetLabel()
         self.sigma = self.largeur_voisinage_picker.GetLabel()
         self.beta = self.distance_maxi_picker.GetLabel()
+        
         if self.border_background.GetValue():
             self.auto_background = "1"
         else:
@@ -568,6 +569,11 @@ class Principale(wx.Frame):
             self.star = "1"
         else:
             self.star = "0"
+            
+        try:
+            float(self.sigma)
+        except ValueError:
+            self.sigma = "0"        
 
 
         #DEMARRAGE DE L'EXE
