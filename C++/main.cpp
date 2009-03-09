@@ -175,11 +175,15 @@ inline void draw_line(CImg<bool> &edges_status_out, GraphType &G,
 
 inline void draw_edges_image_data(GraphType &G, CImg<double> &image,
 								  int &x1, int &y1, int x2, int y2, int &nx, int &ny,
-								  double &lambda, CImg<double> &sigmas, double dist)
+								  double &lambda, CImg<double> &sigmas, double &sigma_hard, double dist)
 {
 	if (x2 >= 0 && x2<nx && y2>=0 && y2 < ny)
 	{
-		double sigma = sigmas(x1, y1);
+		double sigma;
+		if (sigma_hard != 0)
+			sigma = sigma_hard;
+		else
+			sigma = sigmas(x1, y1);
 		double weight = lambda * exp(-diff(image, x1, y1, x2, y2)/(2*sigma*sigma)) / dist;
 		G.add_edge(y1*nx+x1, y2*nx+x2, weight, weight);	//Voisin du haut
 	}
@@ -232,12 +236,14 @@ int main( int argc, char *argv[]  )
 	unsigned int w = image.width;
 	unsigned int h = image.height;
 
-
 	CImg<double> sigmas(w,h);
-	compute_sigmas(image, sigmas);
+	if (sigma == 0)
+		compute_sigmas(image, sigmas);
+
+#ifdef TEST
 	//display_image(sigmas);
 	sigmas.save("sigmas.bmp");
-
+#endif
 
 
 	//Loads object.background seeds
@@ -280,10 +286,10 @@ int main( int argc, char *argv[]  )
 		{
 			G.add_tweights(j*nx+i, 0, 0);
 
-			draw_edges_image_data(G, image, i, j, i, j+1, nx, ny, lambda, sigmas, 1);	//Down
-			draw_edges_image_data(G, image, i, j, i+1, j, nx, ny, lambda, sigmas, 1);	//Right
-			draw_edges_image_data(G, image, i, j, i+1, j-1, nx, ny, lambda, sigmas, sqrt(2.));	//Top right
-			draw_edges_image_data(G, image, i, j, i+1, j+1, nx, ny, lambda, sigmas, sqrt(2.));	//Down right
+			draw_edges_image_data(G, image, i, j, i, j+1, nx, ny, lambda, sigmas, sigma, 1);	//Down
+			draw_edges_image_data(G, image, i, j, i+1, j, nx, ny, lambda, sigmas, sigma, 1);	//Right
+			draw_edges_image_data(G, image, i, j, i+1, j-1, nx, ny, lambda, sigmas, sigma, sqrt(2.));	//Top right
+			draw_edges_image_data(G, image, i, j, i+1, j+1, nx, ny, lambda, sigmas, sigma, sqrt(2.));	//Down right
 
 		}
 	}
