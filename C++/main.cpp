@@ -13,7 +13,7 @@ using namespace cimg_library;
 using namespace std;
 
 
-#define TEST
+//#define TEST
 #define INF 100000000
 #define diff(img, x1, y1, x2, y2) pow(img(x1,y1) - img(x2,y2),2)
 
@@ -204,21 +204,28 @@ int main( int argc, char *argv[]  )
 	//Algo parameters
 	double lambda;
 	double sigma = 0;
-	//double beta;
+	double beta;
+
 	bool auto_background;
 	bool star_shape_prior;
+	bool compute_beta = true;
 
 #ifndef TEST
 	lambda = atof(argv[1]);
 	sigma  = atof(argv[2]);
 	beta   = atof(argv[3]);
+	if (beta == -234.12)
+		compute_beta = true;
 
 	auto_background  = (atof(argv[4]) == 1);
 	star_shape_prior = (atof(argv[5]) == 1);
 
 	cout << "Lambda=" << lambda << endl;
 	cout << "Sigma=" << sigma << endl;
-	cout << "Beta=" << beta << endl;
+	if (!compute_beta)
+		cout << "Beta=" << beta << endl;
+	else
+		cout << "Optimal beta search activated" << endl;
 	cout << "Auto-Background=" << auto_background << endl;
 	cout << "Star Shape=" << star_shape_prior << endl;
 #else
@@ -279,7 +286,8 @@ int main( int argc, char *argv[]  )
 
 	double beta_sup = beta_max;
 	double beta_inf = beta_min;
-	double beta = (beta_sup + beta_inf)/2;
+	if (compute_beta)
+		beta = (beta_sup + beta_inf)/2;
 
 	int nb_iters = 0;
 	int nx=w, ny=h;	// Sans les bords
@@ -359,6 +367,10 @@ int main( int argc, char *argv[]  )
 		double f = G.maxflow();
 		cout << f << endl;
 
+		if (!compute_beta)
+			break;
+
+
 		// Segmentation result
 		int nb_objects=0;
 		for (int j=0;j<ny;j++) {
@@ -376,6 +388,16 @@ int main( int argc, char *argv[]  )
 			beta_inf = beta_inf;
 			beta_sup = beta;
 			beta = (beta_inf + beta)/2;
+
+			if (beta - beta_min < 0.05)
+			{
+				cout << "Diminution du beta..." << endl;
+				beta_inf -= 50;
+				beta_min = beta_inf;
+				beta_sup = beta;
+				beta = (beta_inf + beta)/2;
+				nb_iters = 0;
+			}
 		}
 		else
 		{
@@ -386,6 +408,16 @@ int main( int argc, char *argv[]  )
 			beta_inf = beta;
 			beta_sup = beta_sup;
 			beta = (beta_sup + beta)/2;
+
+			if (beta_max - beta < 0.05)
+			{
+				cout << "augmentation du beta..." << endl;
+				beta_sup += 50;
+				beta_max = beta_sup;
+				beta_inf = beta;
+				beta = (beta_sup + beta)/2;
+				nb_iters = 0;
+			}
 		}
 
 		nb_iters++;
