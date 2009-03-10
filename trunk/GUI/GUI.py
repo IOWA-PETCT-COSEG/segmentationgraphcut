@@ -560,6 +560,7 @@ class Principale(wx.Frame):
         self.sigma = self.largeur_voisinage_picker.GetLabel()
         self.beta = self.distance_maxi_picker.GetLabel()
         
+        
         if self.border_background.GetValue():
             self.auto_background = "1"
         else:
