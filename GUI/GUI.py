@@ -53,6 +53,7 @@ class Principale(wx.Frame):
         self.liste_points = self.object_points
         
         self.all_points = set([])
+        self.star_point = None
 
         
 
@@ -190,6 +191,8 @@ class Principale(wx.Frame):
 
         self.panneau.panel.Bind(wx.EVT_LEFT_DOWN, self.OnLeftClick)
         self.panneau.panel.Bind(wx.EVT_RIGHT_UP, self.OnRemovePolygonPoint)
+        
+        self.panneau.panel.Bind(wx.EVT_LEFT_DCLICK, self.OnDoubleClick)
 
 
         #Paramètres de l'algo
@@ -258,6 +261,35 @@ class Principale(wx.Frame):
         w, h = self.GetSize()
         self.SetPosition((int(screen_width/2-w/2)-78, 10))
 
+
+    def OnDoubleClick(self, evt):
+        #Ajout du point centre de l'étoile
+        X = int(100.*evt.X/self.ratio)
+        Y = int(100.*evt.Y/self.ratio)
+
+        x1, x2 = max(X-self.taille_pinceau, 0), min(X+self.taille_pinceau+1, self.imgORIX)
+        y1, y2 = max(Y-self.taille_pinceau, 0), min(Y+self.taille_pinceau+1, self.imgORIY)
+        self.imgORIG.SetRGBRect(wx.Rect(x1, y1, x2-x1, y2-y1), 0, 0, 255)
+        
+        largeur = (self.imgORIX * self.ratio)/100
+        hauteur = (self.imgORIY * self.ratio)/100
+        self.bmpRESU = self.imgORIG.Scale(largeur, hauteur).ConvertToBitmap()
+        self.panneau.Affiche(self.bmpRESU, self.ratio)
+        
+        if self.star_point:
+            (X,Y) = self.star_point
+            #Suppression du marqueur du point
+            for x in range(max(X-2, 0), min(X+2+1, self.imgORIX)):
+                for y in range(max(Y-2, 0), min(Y+2+1, self.imgORIY)):
+                    self.imgORIG.SetRGB(x, y, self.imgORIGORIG.GetRed(x,y), self.imgORIGORIG.GetGreen(x,y), self.imgORIGORIG.GetBlue(x,y))
+        
+        self.star_point = (X,Y)
+        self.liste_points.add((X,Y))                
+        self.all_points.add((X,Y))
+
+
+        
+        
 
     def AddSimpleTool(self, id, bmp, tooltip, sizer, liste):
         """Ajouter un bouton"""
@@ -500,6 +532,7 @@ class Principale(wx.Frame):
             self.background_points = set([])
             self.object_points = set([])
             self.all_points = set([])
+            self.star_point = []
             self.liste_points = self.object_points
             
             self.radio_box_zone.SetStringSelection("Object")
@@ -533,6 +566,10 @@ class Principale(wx.Frame):
         if not self.all_points:
             self.show_error("No seed point", "Warning")
             return
+        
+        if not self.star_point:
+            self.show_error("No star point", "Warning")
+            return
 
         self.final_image = self.imgORIGORIG.Copy()
 
@@ -544,6 +581,7 @@ class Principale(wx.Frame):
             im.putpixel(point, 1)
         for point in self.background_points:
             im.putpixel(point, 0)
+        im.putpixel(self.star_point, 2)
         im.save('mask.bmp')
 
         #SAUVEGARDE DE L'IMAGE

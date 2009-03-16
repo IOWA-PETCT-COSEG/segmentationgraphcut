@@ -90,9 +90,15 @@ class Visu(wx.ScrolledWindow):
                                                       self.parent.imgORIG.GetBlue(X, Y)),
                                         3)
 
+        take = False
         for (x,y) in self.parent.all_points:
             if abs(x-X)<3 and abs(y-Y)<3:
                 self.SetCursor( self.cursor_take )
+                take = True
                 break
+        
+        if take:
+            self.SetCursor( self.cursor_take )
         else:
             self.SetCursor( self.cursor_normal )
+            
