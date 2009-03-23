@@ -13,7 +13,7 @@ using namespace cimg_library;
 using namespace std;
 
 
-#define TEST
+//#define TEST
 #define INF 100000000
 #define diff(img, x1, y1, x2, y2) pow(img(x1,y1) - img(x2,y2),2)
 
@@ -148,7 +148,8 @@ inline void draw_line(CImg<bool> &edges_status_out, GraphType &G,
 			{
 				G.add_edge(j*nx + i, next_j*nx + next_i, beta, INF);
 				double col = 0;
-				edges.draw_line(5*i, 5*j, 5*next_i, 5*next_j, &col);
+
+				edges.draw_line(5*i, 5*j, 5*next_i, 5*next_j, &col, ~0, 0.5);
 				edges_status_out(i, j, code) = true;
 			}
 		}
@@ -174,19 +175,12 @@ inline void draw_line(CImg<bool> &edges_status_out, GraphType &G,
 			{
 				G.add_edge(j*nx + i, next_j*nx + next_i, beta, INF);
 				double col = 0;
-				edges.draw_line(5*i, 5*j, 5*next_i, 5*next_j, &col);
-				edges_status_out(i,j, code) = true;	
+				edges.draw_line(5*i, 5*j, 5*next_i, 5*next_j, &col, ~0, 0.5);
+				edges_status_out(i,j, code) = true;
 			}
 
 		}
 	}
-	//if (x==780 && y%10==0)
-	//{
-	//	cout << y << endl;
-	//CImgDisplay display(edges_status_out, "edges_status_out");
-	//display.wait(100);
-	//}
-	//edges_status_out.save("lol.bmp");
 	
 }
 
@@ -254,7 +248,7 @@ int main( int argc, char *argv[]  )
 	cout << "TEST " << endl << endl;
 	//Parameters
 	lambda = 20;
-	//beta = -20;
+	beta = -20;
 	auto_background = true;
 	star_shape_prior = true;
 
@@ -331,7 +325,7 @@ int main( int argc, char *argv[]  )
 
 	int nb_iters = 0;
 	int nx=w, ny=h;	// Sans les bords
-	GraphType G(nx*ny,16*nx*ny);
+	GraphType G(nx*ny,32*nx*ny);
 
 	while (true)
 	{
@@ -359,9 +353,9 @@ int main( int argc, char *argv[]  )
 			}
 		}
 
-		display_image(edges);
-		edges.save("edges_data_term.bmp");
+#ifdef TEST
 		edges.fill(255);
+#endif
 
 		//Seed object points
 		for (unsigned int i=0; i<object_points.size(); ++i)
@@ -390,16 +384,18 @@ int main( int argc, char *argv[]  )
 		{
 			for (int y=0; y<h; ++y)
 			{
-				draw_line(edges_status_out, G, x, y, X, Y, nx, beta, auto_background, star_shape_prior, edges);
+				if ((abs(x-X) + abs(y-Y)) > 2)
+					draw_line(edges_status_out, G, x, y, X, Y, nx, beta, auto_background, star_shape_prior, edges);
 			}
 		}
 
 		cout << "Done." << endl;
 
 
-		display_image(edges.get_resize(-400, -400), 1000);
+#ifdef TEST
+		//display_image(edges.get_resize(-400, -400), 1000);
 		edges.save("star_prior_term.bmp");
-
+#endif
 
 		// Coupe
 		cout << "Computing Cut..." << endl;
