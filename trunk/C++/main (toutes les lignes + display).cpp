@@ -13,9 +13,16 @@ using namespace cimg_library;
 using namespace std;
 
 
-//#define TEST
+#define TEST
 #define INF 100000000
 #define diff(img, x1, y1, x2, y2) pow(img(x1,y1) - img(x2,y2),2)
+
+#ifdef TEST
+	#define VOIS 2
+#else
+	#define VOIS 10
+#endif
+
 
 typedef Graph<double,double,double> GraphType;
 
@@ -23,10 +30,13 @@ typedef Graph<double,double,double> GraphType;
 * Affiche de l'image à l'écran
 **/
 template <class T> 
-void display_image(CImg<T> &image)
+void display_image(CImg<T> &image, int delay = 0)
 {
 	CImgDisplay display(image, "Image");
-	display.wait();
+	if (delay != 0)
+		display.wait(delay);
+	else
+		display.wait();
 }
 
 inline int round(double x)
@@ -49,10 +59,10 @@ void compute_sigmas(CImg<double> &image, CImg<double> &sigmas)
 		for (int j=0; j<h; ++j)
 		{
 			double sum=0;
-			int xmax = min(w-1, i+10);
-			int ymax = min(h-1, j+10);
-			int xmin = max(0,i-10);
-			int ymin = max(0,j-10);
+			int xmax = min(w-1, i+VOIS);
+			int ymax = min(h-1, j+VOIS);
+			int xmin = max(0,i-VOIS);
+			int ymin = max(0,j-VOIS);
 
 			for (int x=xmin; x<xmax; ++x)
 			{
@@ -79,7 +89,8 @@ void compute_sigmas(CImg<double> &image, CImg<double> &sigmas)
 **/
 void find_points(CImg<double> &mask,
 				 std::vector<Point> &object_points,
-				 std::vector<Point> &background_points)
+				 std::vector<Point> &background_points,
+				 Point &star_point)
 {
 	for (unsigned int i=0; i<mask.width; ++i)
 	{
@@ -90,6 +101,8 @@ void find_points(CImg<double> &mask,
 				object_points.push_back(Point(i,j));
 			else if (val == 0)
 				background_points.push_back(Point(i,j));
+			else if (val == 2)
+				star_point = Point(i,j);
 		}
 	}
 }
@@ -100,7 +113,8 @@ void find_points(CImg<double> &mask,
 **/
 inline void draw_line(CImg<bool> &edges_status_out, GraphType &G,
 					  int &x, int &y, int &X, int &Y,
-					  int &nx, double &beta, bool &auto_background, bool &star_shape_prior)
+					  int &nx, double &beta, bool &auto_background, bool &star_shape_prior,
+					  CImg<double> &edges)
 {
 	if (auto_background)
 		G.add_tweights(y*nx+x, INF, 0);
@@ -133,6 +147,8 @@ inline void draw_line(CImg<bool> &edges_status_out, GraphType &G,
 			if (!edges_status_out(i,j,code))
 			{
 				G.add_edge(j*nx + i, next_j*nx + next_i, beta, INF);
+				double col = 0;
+				edges.draw_line(5*i, 5*j, 5*next_i, 5*next_j, &col);
 				edges_status_out(i, j, code) = true;
 			}
 		}
@@ -157,9 +173,10 @@ inline void draw_line(CImg<bool> &edges_status_out, GraphType &G,
 			if (!edges_status_out(i,j, code))
 			{
 				G.add_edge(j*nx + i, next_j*nx + next_i, beta, INF);
+				double col = 0;
+				edges.draw_line(5*i, 5*j, 5*next_i, 5*next_j, &col);
 				edges_status_out(i,j, code) = true;	
 			}
-
 
 		}
 	}
@@ -170,13 +187,15 @@ inline void draw_line(CImg<bool> &edges_status_out, GraphType &G,
 	//display.wait(100);
 	//}
 	//edges_status_out.save("lol.bmp");
+	
 }
 
 
 
 inline void draw_edges_image_data(GraphType &G, CImg<double> &image,
 								  int &x1, int &y1, int x2, int y2, int &nx, int &ny,
-								  double &lambda, CImg<double> &sigmas, double &sigma_hard, double dist)
+								  double &lambda, CImg<double> &sigmas, double &sigma_hard, double dist,
+								  CImg<double> &edges)
 {
 	if (x2 >= 0 && x2<nx && y2>=0 && y2 < ny)
 	{
@@ -191,6 +210,8 @@ inline void draw_edges_image_data(GraphType &G, CImg<double> &image,
 			weight = 0;
 
 		G.add_edge(y1*nx+x1, y2*nx+x2, weight, weight);	//Voisin du haut
+		double col = 0;
+		edges.draw_line(5*x1, 5*y1, 5*x2, 5*y2, &col);
 	}
 }
 
@@ -204,7 +225,7 @@ int main( int argc, char *argv[]  )
 	//Algo parameters
 	double lambda;
 	double sigma = 0;
-	double beta;
+	double beta = 0;
 
 	bool auto_background;
 	bool star_shape_prior;
@@ -214,8 +235,9 @@ int main( int argc, char *argv[]  )
 	lambda = atof(argv[1]);
 	sigma  = atof(argv[2]);
 	beta   = atof(argv[3]);
-	if (beta == -234.12)
-		compute_beta = true;
+	
+	if (beta != -234.12)
+		compute_beta = false;
 
 	auto_background  = (atof(argv[4]) == 1);
 	star_shape_prior = (atof(argv[5]) == 1);
@@ -253,16 +275,27 @@ int main( int argc, char *argv[]  )
 
 #ifdef TEST
 	//display_image(sigmas);
-	sigmas.save("sigmas.bmp");
 #endif
+	sigmas.save("sigmas.bmp");
 
 	//Loads object.background seeds
 	std::vector<Point> object_points;
 	std::vector<Point> background_points;
-	find_points(mask, object_points, background_points);
+	Point star_point(-1,-1);
+	find_points(mask, object_points, background_points, star_point);
+	cout << "Star point is: " << star_point.x << " " << star_point.y << endl;
+	cout << object_points.size() << " object points." << endl;
+	cout << background_points.size() << " background points." << endl;
 
-	int X = object_points[0].x;
-	int Y = object_points[0].y;
+	if (star_point.x == -1)
+	{
+		cout << "No star point provided..." << endl;
+		system("pause");
+		return 1;
+	}
+
+	int X = star_point.x;
+	int Y = star_point.y;
 
 #ifdef TEST
 	//Display points coordinates
@@ -277,6 +310,13 @@ int main( int argc, char *argv[]  )
 	cout << endl;
 
 #endif
+
+
+
+
+	CImg<double> edges(w*5-4, h*5-4, 1, 1, 255);
+
+
 
 
 	//Finding optimal beta
@@ -311,13 +351,17 @@ int main( int argc, char *argv[]  )
 			{
 				G.add_tweights(j*nx+i, 0, 0);
 
-				draw_edges_image_data(G, image, i, j, i, j+1, nx, ny, lambda, sigmas, sigma, 1);	//Down
-				draw_edges_image_data(G, image, i, j, i+1, j, nx, ny, lambda, sigmas, sigma, 1);	//Right
-				draw_edges_image_data(G, image, i, j, i+1, j-1, nx, ny, lambda, sigmas, sigma, sqrt(2.));	//Top right
-				draw_edges_image_data(G, image, i, j, i+1, j+1, nx, ny, lambda, sigmas, sigma, sqrt(2.));	//Down right
+				draw_edges_image_data(G, image, i, j, i, j+1, nx, ny, lambda, sigmas, sigma, 1, edges);	//Down
+				draw_edges_image_data(G, image, i, j, i+1, j, nx, ny, lambda, sigmas, sigma, 1, edges);	//Right
+				draw_edges_image_data(G, image, i, j, i+1, j-1, nx, ny, lambda, sigmas, sigma, sqrt(2.), edges);	//Top right
+				draw_edges_image_data(G, image, i, j, i+1, j+1, nx, ny, lambda, sigmas, sigma, sqrt(2.), edges);	//Down right
 
 			}
 		}
+
+		display_image(edges);
+		edges.save("edges_data_term.bmp");
+		edges.fill(255);
 
 		//Seed object points
 		for (unsigned int i=0; i<object_points.size(); ++i)
@@ -326,6 +370,9 @@ int main( int argc, char *argv[]  )
 			int y = object_points[i].y;
 			G.add_tweights(y*nx+x, 0, INF);
 		}
+
+		//Star point
+		G.add_tweights(Y*nx+X, 0, INF);
 
 		//Background object points
 		for (unsigned int i=0; i<background_points.size(); ++i)
@@ -339,28 +386,20 @@ int main( int argc, char *argv[]  )
 
 		//Star shape edges
 		CImg<bool> edges_status_out(w, h, 9, 1, false);
-		int x, y;
-		for (unsigned int i=0; i<w; ++i)
+		for (int x=0; x<w; ++x)
 		{
-			x = i;
-			y = 0;
-			draw_line(edges_status_out, G, x, y, X, Y, nx, beta, auto_background, star_shape_prior);
-
-			x = i;
-			y = image.height - 1;
-			draw_line(edges_status_out, G, x, y, X, Y, nx, beta, auto_background, star_shape_prior);
+			for (int y=0; y<h; ++y)
+			{
+				draw_line(edges_status_out, G, x, y, X, Y, nx, beta, auto_background, star_shape_prior, edges);
+			}
 		}
-		for (unsigned int j=1; j<h-1; ++j)
-		{
-			x = 0;
-			y = j;
-			draw_line(edges_status_out, G, x, y, X, Y, nx, beta, auto_background, star_shape_prior);
 
-			x = image.width - 1;
-			y = j;
-			draw_line(edges_status_out, G, x, y, X, Y, nx, beta, auto_background, star_shape_prior);
-		}
 		cout << "Done." << endl;
+
+
+		display_image(edges.get_resize(-400, -400), 1000);
+		edges.save("star_prior_term.bmp");
+
 
 		// Coupe
 		cout << "Computing Cut..." << endl;
@@ -382,7 +421,7 @@ int main( int argc, char *argv[]  )
 		cout << "Object contains " << nb_objects << " points" << endl << endl;
 
 		//New beta
-		if (nb_objects < 100)
+		if (nb_objects < 1000)
 		{
 			//On baisse le beta
 			beta_inf = beta_inf;
@@ -448,6 +487,17 @@ int main( int argc, char *argv[]  )
 				image(object_points[in].x+i, object_points[in].y+j, 1) = 255;
 				image(object_points[in].x+i, object_points[in].y+j, 2) = 0;
 			}
+		}
+	}
+
+	//Star point
+	for (int i=-2; i<=2; ++i)
+	{
+		for (int j=-2; j<=2; ++j)
+		{
+			image(X+i, Y+j, 0) = 0;
+			image(X+i, Y+j, 1) = 0;
+			image(X+i, Y+j, 2) = 255;
 		}
 	}
 
