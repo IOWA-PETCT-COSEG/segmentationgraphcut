@@ -12,8 +12,14 @@
 using namespace cimg_library;
 using namespace std;
 
-
 //#define TEST
+
+#ifdef TEST
+#define ZOOM 5
+#else
+#define ZOOM 1
+#endif
+
 #define INF 100000000
 #define diff(img, x1, y1, x2, y2) pow(img(x1,y1) - img(x2,y2),2)
 
@@ -142,16 +148,21 @@ inline void draw_line(CImg<bool> &edges_status_out, GraphType &G,
 			int next_j = j+dy;
 
 			dx = next_i - i;
-			int code = 3*(dx+1) + dy + 1;
 
-			if (!edges_status_out(i,j,code))
+			G.add_edge(j*nx + i, next_j*nx + next_i, beta, INF);
+#ifdef TEST
+			//edges.draw_arrow(ZOOM*i, ZOOM*j, ZOOM*next_i, ZOOM*next_j, &col, 20, 10);
+			double col = 0;
+			edges.draw_line(ZOOM*i, ZOOM*j, ZOOM*next_i, ZOOM*next_j, &col);
+#endif
+
+			if (   (!edges_status_out(next_i, next_j)) ||
+				   ((next_i == X) && (next_j == Y))   )
 			{
-				G.add_edge(j*nx + i, next_j*nx + next_i, beta, INF);
-				double col = 0;
-
-				edges.draw_line(5*i, 5*j, 5*next_i, 5*next_j, &col, ~0, 0.5);
-				edges_status_out(i, j, code) = true;
+				edges_status_out(next_i, next_j) = true;
 			}
+			else
+				return;
 		}
 	}
 	else
@@ -169,15 +180,21 @@ inline void draw_line(CImg<bool> &edges_status_out, GraphType &G,
 			int next_j = round(slopex * (i+dx-x) + y);
 
 			dy = next_j - j;
-			int code = 3*(dx+1) + dy + 1;
 
-			if (!edges_status_out(i,j, code))
+			G.add_edge(j*nx + i, next_j*nx + next_i, beta, INF);
+#ifdef TEST
+			double col = 0;
+			edges.draw_line(ZOOM*i, ZOOM*j, ZOOM*next_i, ZOOM*next_j, &col);
+			//edges.draw_arrow(ZOOM*i, ZOOM*j, ZOOM*next_i, ZOOM*next_j, &col, 20, 10);
+#endif
+			if (   (!edges_status_out(next_i, next_j)) ||
+				   ((next_i == X) && (next_j == Y))   )
 			{
-				G.add_edge(j*nx + i, next_j*nx + next_i, beta, INF);
-				double col = 0;
-				edges.draw_line(5*i, 5*j, 5*next_i, 5*next_j, &col, ~0, 0.5);
-				edges_status_out(i,j, code) = true;
+				edges_status_out(next_i, next_j) = true;
 			}
+			else
+
+				return;
 
 		}
 	}
@@ -205,7 +222,9 @@ inline void draw_edges_image_data(GraphType &G, CImg<double> &image,
 
 		G.add_edge(y1*nx+x1, y2*nx+x2, weight, weight);	//Voisin du haut
 		double col = 0;
-		edges.draw_line(5*x1, 5*y1, 5*x2, 5*y2, &col);
+#ifdef TEST
+		edges.draw_line(ZOOM*x1, ZOOM*y1, ZOOM*x2, ZOOM*y2, &col);
+#endif
 	}
 }
 
@@ -247,8 +266,8 @@ int main( int argc, char *argv[]  )
 #else
 	cout << "TEST " << endl << endl;
 	//Parameters
-	lambda = 20;
-	beta = -20;
+	lambda = 10;
+	beta = -6;
 	auto_background = true;
 	star_shape_prior = true;
 
@@ -308,7 +327,7 @@ int main( int argc, char *argv[]  )
 
 
 
-	CImg<double> edges(w*5-4, h*5-4, 1, 1, 255);
+	CImg<double> edges(w*ZOOM-(ZOOM-1), h*ZOOM-(ZOOM-1), 1, 1, 255);
 
 
 
@@ -378,18 +397,40 @@ int main( int argc, char *argv[]  )
 
 
 
-		//Star shape edges
-		CImg<bool> edges_status_out(w, h, 9, 1, false);
-		for (int x=0; x<w; ++x)
-		{
-			for (int y=0; y<h; ++y)
-			{
-				if ((abs(x-X) + abs(y-Y)) > 2)
-					draw_line(edges_status_out, G, x, y, X, Y, nx, beta, auto_background, star_shape_prior, edges);
-			}
-		}
+		////Star shape edges for each line from the center to any pixel
+		//CImg<bool> edges_status_out(w, h, 9, 1, false);
+		//for (int x=0; x<w; ++x)
+		//{
+		//	for (int y=0; y<h; ++y)
+		//	{
+		//		if ((abs(x-X) + abs(y-Y)) > 2)
+		//			draw_line(edges_status_out, G, x, y, X, Y, nx, beta, auto_background, star_shape_prior, edges);
+		//	}
+		//}
+
+
+        //Star shape edges for each line from C to the border
+        CImg<bool> edges_status_out(w, h, 1, 1, false);
+		cimg_for_borderXY(image, x, y, 1)
+			draw_line(edges_status_out, G, x, y, X, Y, nx, beta, auto_background, star_shape_prior, edges);
 
 		cout << "Done." << endl;
+
+
+		////Ballooning force
+		//double k = 5.5;
+		//for (int x=0; x<w; ++x)
+		//{
+		//	for (int y=0; y<h; ++y)
+		//	{
+		//		if (x==X || y==Y)
+		//			continue;
+
+		//		double force = k * 1. / sqrt((double) (x-X)*(x-X) + (y-Y)*(y-Y));
+		//		G.add_tweights(y*nx+x, force, 0);
+		//	}
+		//}
+
 
 
 #ifdef TEST
@@ -465,9 +506,9 @@ int main( int argc, char *argv[]  )
 		for (int i=0;i<nx;i++) {
 			if (G.what_segment(j*nx+i)==GraphType::SINK)
 			{
-				image(i,j,0) = 0;
+				//image(i,j,0) = 0;
 				image(i,j,1) = 255;
-				image(i,j,2) = 0;
+				//image(i,j,2) = 0;
 			}
 		}
 	}
@@ -515,6 +556,7 @@ int main( int argc, char *argv[]  )
 
 #ifdef TEST
 	display_image(image);
+	system("pause");
 #endif
 
 	image.save("results.bmp");

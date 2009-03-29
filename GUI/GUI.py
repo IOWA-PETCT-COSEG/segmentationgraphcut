@@ -288,8 +288,6 @@ class Principale(wx.Frame):
         self.all_points.add((X,Y))
 
 
-        
-        
 
     def AddSimpleTool(self, id, bmp, tooltip, sizer, liste):
         """Ajouter un bouton"""
