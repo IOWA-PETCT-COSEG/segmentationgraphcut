@@ -241,6 +241,7 @@ int main( int argc, char *argv[]  )
 	double beta = 0;
 
 	bool auto_background;
+	bool ballooning;
 	bool star_shape_prior;
 	bool compute_beta = true;
 
@@ -254,6 +255,7 @@ int main( int argc, char *argv[]  )
 
 	auto_background  = (atof(argv[4]) == 1);
 	star_shape_prior = (atof(argv[5]) == 1);
+	ballooning = (atof(argv[6]) == 1);
 
 	cout << "Lambda=" << lambda << endl;
 	cout << "Sigma=" << sigma << endl;
@@ -416,21 +418,23 @@ int main( int argc, char *argv[]  )
 
 		cout << "Done." << endl;
 
+		if (ballooning)
+		{
+			//Ballooning force
+			double k = 5.5;
+			for (int x=0; x<w; ++x)
+			{
+				for (int y=0; y<h; ++y)
+				{
+					if (x==X || y==Y)
+						continue;
 
-		////Ballooning force
-		//double k = 5.5;
-		//for (int x=0; x<w; ++x)
-		//{
-		//	for (int y=0; y<h; ++y)
-		//	{
-		//		if (x==X || y==Y)
-		//			continue;
-
-		//		double force = k * 1. / sqrt((double) (x-X)*(x-X) + (y-Y)*(y-Y));
-		//		G.add_tweights(y*nx+x, force, 0);
-		//	}
-		//}
-
+					double force = k * 1. / sqrt((double) (x-X)*(x-X) + (y-Y)*(y-Y));
+					//cout << force << endl;
+					G.add_tweights(y*nx+x, force, 0);
+				}
+			}
+		}
 
 
 #ifdef TEST

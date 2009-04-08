@@ -9,6 +9,8 @@ public:
 		this->y = v;
 	}
 
+	Point() {};
+
 	int x;
 	int y;
 };
