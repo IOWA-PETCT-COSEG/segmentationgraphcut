@@ -225,6 +225,14 @@ class Principale(wx.Frame):
         self.sizer_params1.Add(self.border_background_text, 1, flag=wx.RIGHT, border=7)
         self.sizer_params1.Add(self.border_background, 1)
 
+        self.ballooning_checkbox = wx.CheckBox(self.panel, -1, "")
+        self.ballooning_checkbox.SetValue(False)
+        self.ballooning_checkbox_text = wx.StaticText(self.panel, -1, "Ballooning force")
+        self.ballooning_checkbox_text.SetFont(wx.Font(10, wx.ROMAN, wx.NORMAL, wx.NORMAL))
+        self.sizer_params1.Add(self.ballooning_checkbox_text, 1, flag=wx.RIGHT, border=7)
+        self.sizer_params1.Add(self.ballooning_checkbox, 1)
+
+
         self.star_shape = wx.CheckBox(self.panel, -1, "")
         self.star_shape.SetValue(True)
         self.star_shape_text = wx.StaticText(self.panel, -1, "Star shape")
@@ -602,6 +610,11 @@ class Principale(wx.Frame):
         else:
             self.auto_background = "0"
 
+        if self.ballooning_checkbox.GetValue():
+            self.ballooning = "1"
+        else:
+            self.ballooning = "0"
+
         if self.star_shape.GetValue():
             self.star = "1"
         else:
@@ -625,7 +638,8 @@ class Principale(wx.Frame):
                                                    self.sigma,
                                                    self.beta,
                                                    self.auto_background,
-                                                   self.star
+                                                   self.star,
+                                                   self.ballooning
                                                    ]
                              )
 
