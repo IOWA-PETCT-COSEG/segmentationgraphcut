@@ -421,17 +421,17 @@ int main( int argc, char *argv[]  )
 		if (ballooning)
 		{
 			//Ballooning force
-			double k = 5.5;
+			double k = 10;
 			for (int x=0; x<w; ++x)
 			{
 				for (int y=0; y<h; ++y)
 				{
-					if (x==X || y==Y)
-						continue;
+					if (!(x==X && y==Y))
+					{
+						double force = - k * 1. / sqrt((double) ((x-X)*(x-X) + (y-Y)*(y-Y)) );
 
-					double force = k * 1. / sqrt((double) (x-X)*(x-X) + (y-Y)*(y-Y));
-					//cout << force << endl;
-					G.add_tweights(y*nx+x, force, 0);
+						G.add_tweights(y*nx+x, 0, -force);
+					}
 				}
 			}
 		}
