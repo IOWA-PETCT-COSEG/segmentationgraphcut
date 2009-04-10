@@ -504,14 +504,13 @@ int main( int argc, char *argv[]  )
 	}
 
 
-
 	// Dessin de la zone objet
 	for (int j=0;j<ny;j++) {
 		for (int i=0;i<nx;i++) {
 			if (G.what_segment(j*nx+i)==GraphType::SINK)
 			{
 				//image(i,j,0) = 0;
-				image(i,j,1) = 255;
+				image(i,j,1) = image(i,j,1)*0.5 + 255 * 0.5;
 				//image(i,j,2) = 0;
 			}
 		}
