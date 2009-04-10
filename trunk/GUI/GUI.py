@@ -271,6 +271,11 @@ class Principale(wx.Frame):
 
 
     def OnDoubleClick(self, evt):
+        
+        if self.star_point:
+            self.show_error("Only one star point allowed")
+            return
+        
         #Ajout du point centre de l'étoile
         X = int(100.*evt.X/self.ratio)
         Y = int(100.*evt.Y/self.ratio)
@@ -407,17 +412,21 @@ class Principale(wx.Frame):
             Y = int(100.*evt.Y/self.ratio)
 
 
-            ind_list = 0
+            ind_list = []
             for (x,y) in self.object_points:
                 if abs(x-X)<3 and abs(y-Y)<3:
                     (X, Y) = (x, y)
-                    ind_list = 1
+                    ind_list.append(1)
                     break
             for (x,y) in self.background_points:
                 if abs(x-X)<3 and abs(y-Y)<3:
                     (X, Y) = (x, y)
-                    ind_list = 2
+                    ind_list.append(2)
                     break
+            if self.star_point:
+                if abs(self.star_point[0]-X)<3 and abs(self.star_point[1]-Y)<3:
+                    (X, Y) = self.star_point
+                    ind_list.append(0)
             
             if not ind_list:
                 #self.show_error("Click on a point to delete it!")
@@ -431,10 +440,12 @@ class Principale(wx.Frame):
 
 
             #Suppression du point dans la liste
-            if ind_list == 1:
+            if 1 in ind_list:
                 self.object_points.remove((X,Y))
-            else:
+            if 2 in ind_list:
                 self.background_points.remove((X,Y))
+            if 0 in ind_list:
+                self.star_point = []
             self.all_points.remove((X,Y))
 
             largeur = (self.imgORIX * self.ratio)/100
