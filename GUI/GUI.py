@@ -217,6 +217,12 @@ class Principale(wx.Frame):
         self.distance_maxi_picker_text.SetFont(wx.Font(10, wx.ROMAN, wx.NORMAL, wx.NORMAL))
         self.sizer_params1.Add(self.distance_maxi_picker_text, 1, flag=wx.ALIGN_LEFT)
         self.sizer_params1.Add(self.distance_maxi_picker, 1, flag=wx.ALIGN_RIGHT)
+
+        self.force_picker = wx.TextCtrl(self.panel, -1, "5", size=(50, -1))
+        self.force_picker_text = wx.StaticText(self.panel, -1, 'F')
+        self.force_picker_text.SetFont(wx.Font(10, wx.ROMAN, wx.NORMAL, wx.NORMAL))
+        self.sizer_params1.Add(self.force_picker_text, 1, flag=wx.ALIGN_LEFT)
+        self.sizer_params1.Add(self.force_picker, 1, flag=wx.ALIGN_RIGHT)
         
         self.border_background = wx.CheckBox(self.panel, -1, "")
         self.border_background.SetValue(True)
@@ -614,6 +620,7 @@ class Principale(wx.Frame):
         self.lamb = self.largeur_patch_picker.GetLabel()
         self.sigma = self.largeur_voisinage_picker.GetLabel()
         self.beta = self.distance_maxi_picker.GetLabel()
+        self.force = self.force_picker.GetLabel()
         
         
         if self.border_background.GetValue():
@@ -639,7 +646,12 @@ class Principale(wx.Frame):
         try:
             float(self.sigma)
         except ValueError:
-            self.sigma = "0"        
+            self.sigma = "0"
+
+        try:
+            float(self.force)
+        except ValueError:
+            self.force = "0"
 
 
         #DEMARRAGE DE L'EXE
@@ -650,7 +662,8 @@ class Principale(wx.Frame):
                                                    self.beta,
                                                    self.auto_background,
                                                    self.star,
-                                                   self.ballooning
+                                                   self.ballooning,
+                                                   self.force
                                                    ]
                              )
 
