@@ -30,6 +30,11 @@ using namespace std;
 #endif
 
 
+int BOUNDARY_BALLOONING = 0;
+int UNIFORM_BALLOONING = 1;
+int FORCE_BALLOONING = 2;
+
+
 typedef Graph<double,double,double> GraphType;
 
 /**
@@ -239,29 +244,32 @@ int main( int argc, char *argv[]  )
 	double lambda;
 	double sigma = 0;
 	double beta = 0;
+	double force_type = 0;
+	double force;
 
 	bool auto_background;
 	bool ballooning;
 	bool star_shape_prior;
-	bool compute_beta = true;
+	bool compute_beta = false;
 
 #ifndef TEST
 	lambda = atof(argv[1]);
 	sigma  = atof(argv[2]);
-	beta   = atof(argv[3]);
 	
-	if (beta != -234.12)
-		compute_beta = false;
+	auto_background  = (atof(argv[3]) == 1);
+	star_shape_prior = (atof(argv[4]) == 1);
+	
+	force_type = atof(argv[5]);
+	force = atof(argv[6]);
 
-	auto_background  = (atof(argv[4]) == 1);
-	star_shape_prior = (atof(argv[5]) == 1);
-	ballooning = (atof(argv[6]) == 1);
-
-	if (ballooning)
+	if (force_type == BOUNDARY_BALLOONING)
 	{
-		beta = 0;
-		compute_beta = false;
+		beta = force;
+
+		if (force == -234.12)
+			compute_beta = true;
 	}
+
 
 	cout << "Lambda=" << lambda << endl;
 	cout << "Sigma=" << sigma << endl;
@@ -350,7 +358,7 @@ int main( int argc, char *argv[]  )
 	if (compute_beta)
 		beta = (beta_sup + beta_inf)/2;
 
-	int nb_iters = 0;
+	int nb_iters = 10;
 	int nx=w, ny=h;	// Sans les bords
 	GraphType G(nx*ny,32*nx*ny);
 
@@ -424,7 +432,7 @@ int main( int argc, char *argv[]  )
 
 		cout << "Done." << endl;
 
-		if (ballooning)
+		if (force_type == UNIFORM_BALLOONING)
 		{
 			//Ballooning force
 			double k = 1;
@@ -434,8 +442,23 @@ int main( int argc, char *argv[]  )
 				{
 					if (!(x==X && y==Y))
 					{
-						double force = - k * 1. / sqrt((double) ((x-X)*(x-X) + (y-Y)*(y-Y)) );
-						G.add_tweights(y*nx+x, force, 0);
+						G.add_tweights(y*nx+x, -force, 0);
+					}
+				}
+			}
+		}
+
+		if (force_type == FORCE_BALLOONING)
+		{
+			//Ballooning force
+			for (int x=0; x<w; ++x)
+			{
+				for (int y=0; y<h; ++y)
+				{
+					if (!(x==X && y==Y))
+					{
+						double tweight = - force * 1. / sqrt((double) ((x-X)*(x-X) + (y-Y)*(y-Y)) );
+						G.add_tweights(y*nx+x, tweight, 0);
 
 						//double force = - k * 1. / sqrt((double) ((x-X)*(x-X) + (y-Y)*(y-Y)) );
 						//G.add_tweights(y*nx+x, force, 0);
@@ -443,6 +466,7 @@ int main( int argc, char *argv[]  )
 				}
 			}
 		}
+
 
 
 #ifdef TEST

@@ -153,7 +153,7 @@ class Principale(wx.Frame):
         self.box = wx.StaticBox(self.panel, -1, "Outils de sélection")
         self.box.SetFont(wx.Font(10, wx.ROMAN, wx.NORMAL, wx.NORMAL))
         self.sizer_params_box = wx.StaticBoxSizer(self.box, wx.VERTICAL)
-        self.sizer_params = wx.FlexGridSizer(cols = 1, vgap=0)
+        self.sizer_params = wx.FlexGridSizer(cols = 2, hgap=20)
         self.sizer_params_box.Add(self.sizer_params, 0, wx.ALIGN_CENTER | wx.LEFT | wx.RIGHT, border=10)
 
 
@@ -199,6 +199,7 @@ class Principale(wx.Frame):
         self.box.Show()
 
         self.sizer_params1 = wx.FlexGridSizer(cols=2, vgap=2, hgap=1)
+        self.sizer_params2 = wx.FlexGridSizer(cols=2, vgap=2, hgap=1)
 
         self.largeur_patch_picker = wx.TextCtrl(self.panel, -1, "20", size=(50, -1))
         self.largeur_patch_picker_text = wx.StaticText(self.panel, -1, u'\u03BB')
@@ -212,17 +213,44 @@ class Principale(wx.Frame):
         self.sizer_params1.Add(self.largeur_voisinage_picker_text, 1, flag=wx.ALIGN_LEFT|wx.RIGHT, border=10)
         self.sizer_params1.Add(self.largeur_voisinage_picker, 1, flag=wx.ALIGN_RIGHT)
 
-        self.distance_maxi_picker = wx.TextCtrl(self.panel, -1, "", size=(50, -1))
-        self.distance_maxi_picker_text = wx.StaticText(self.panel, -1, u'\u03B2')
+        self.texts = {}
+        self.texts_inv = {}
+        self.labels = [u"Boundary ballooning  \u03B2",
+                       'Uniform ballooning     F',
+                       'Force ballooning          F']
+
+        self.distance_maxi_picker = wx.TextCtrl(self.panel, -1, "-10", size=(50, -1))
+        self.distance_maxi_picker_text = wx.RadioButton(self.panel, -1, self.labels[0])
+        self.distance_maxi_picker_text.SetValue(True)
+        self.distance_maxi_picker_text.Bind(wx.EVT_RADIOBUTTON, self.OnRadio)
         self.distance_maxi_picker_text.SetFont(wx.Font(10, wx.ROMAN, wx.NORMAL, wx.NORMAL))
-        self.sizer_params1.Add(self.distance_maxi_picker_text, 1, flag=wx.ALIGN_LEFT)
-        self.sizer_params1.Add(self.distance_maxi_picker, 1, flag=wx.ALIGN_RIGHT)
+        self.sizer_params2.Add(self.distance_maxi_picker_text, 1, flag=wx.ALIGN_LEFT)
+        self.sizer_params2.Add(self.distance_maxi_picker, 1, flag=wx.ALIGN_RIGHT)
+        self.selectedText = self.distance_maxi_picker
+        self.texts[self.labels[0]] = self.distance_maxi_picker
+        self.texts_inv[self.distance_maxi_picker] = self.labels[0]
+
+        self.force_picker_uni = wx.TextCtrl(self.panel, -1, "0.1", size=(50, -1))
+        self.force_picker_uni_text = wx.RadioButton(self.panel, -1, self.labels[1])
+        self.force_picker_uni_text.Bind(wx.EVT_RADIOBUTTON, self.OnRadio)
+        self.force_picker_uni_text.SetFont(wx.Font(10, wx.ROMAN, wx.NORMAL, wx.NORMAL))
+        self.sizer_params2.Add(self.force_picker_uni_text, 1, flag=wx.ALIGN_LEFT)
+        self.sizer_params2.Add(self.force_picker_uni, 1, flag=wx.ALIGN_RIGHT)
+        self.texts[self.labels[1]] = self.force_picker_uni
+        self.texts_inv[self.force_picker_uni] = self.labels[1]
 
         self.force_picker = wx.TextCtrl(self.panel, -1, "5", size=(50, -1))
-        self.force_picker_text = wx.StaticText(self.panel, -1, 'F')
+        self.force_picker_text = wx.RadioButton(self.panel, -1, self.labels[2])
+        self.force_picker_text.Bind(wx.EVT_RADIOBUTTON, self.OnRadio)
         self.force_picker_text.SetFont(wx.Font(10, wx.ROMAN, wx.NORMAL, wx.NORMAL))
-        self.sizer_params1.Add(self.force_picker_text, 1, flag=wx.ALIGN_LEFT)
-        self.sizer_params1.Add(self.force_picker, 1, flag=wx.ALIGN_RIGHT)
+        self.sizer_params2.Add(self.force_picker_text, 1, flag=wx.ALIGN_LEFT)
+        self.sizer_params2.Add(self.force_picker, 1, flag=wx.ALIGN_RIGHT)
+        self.texts[self.labels[2]] = self.force_picker
+        self.texts_inv[self.force_picker] = self.labels[2]
+        
+        for text in self.texts.values():
+            text.Enable(False)
+        self.texts[self.labels[0]].Enable(True)
         
         self.border_background = wx.CheckBox(self.panel, -1, "")
         self.border_background.SetValue(True)
@@ -230,14 +258,6 @@ class Principale(wx.Frame):
         self.border_background_text.SetFont(wx.Font(10, wx.ROMAN, wx.NORMAL, wx.NORMAL))
         self.sizer_params1.Add(self.border_background_text, 1, flag=wx.RIGHT, border=7)
         self.sizer_params1.Add(self.border_background, 1)
-
-        self.ballooning_checkbox = wx.CheckBox(self.panel, -1, "")
-        self.ballooning_checkbox.SetValue(False)
-        self.ballooning_checkbox_text = wx.StaticText(self.panel, -1, "Ballooning force")
-        self.ballooning_checkbox_text.SetFont(wx.Font(10, wx.ROMAN, wx.NORMAL, wx.NORMAL))
-        self.sizer_params1.Add(self.ballooning_checkbox_text, 1, flag=wx.RIGHT, border=7)
-        self.sizer_params1.Add(self.ballooning_checkbox, 1)
-
 
         self.star_shape = wx.CheckBox(self.panel, -1, "")
         self.star_shape.SetValue(True)
@@ -248,6 +268,7 @@ class Principale(wx.Frame):
         
         
         self.sizer_params.Add(self.sizer_params1, 1, flag=wx.ALIGN_CENTER_HORIZONTAL|wx.ALIGN_CENTER_VERTICAL, border=0)
+        self.sizer_params.Add(self.sizer_params2, 1, flag=wx.ALIGN_CENTER_HORIZONTAL|wx.ALIGN_CENTER_VERTICAL, border=0)
 
         self.box.SetLabel("Algo parameters")
 
@@ -274,6 +295,17 @@ class Principale(wx.Frame):
         #Positionnement de la fenetre au centre de l'écran
         w, h = self.GetSize()
         self.SetPosition((int(screen_width/2-w/2)-78, 10))
+
+
+
+    def OnRadio(self, event):
+        if self.selectedText:
+            self.selectedText.Enable(False)
+        radioSelected = event.GetEventObject()
+        text = self.texts[radioSelected.GetLabel()]
+        text.Enable(True)
+        self.selectedText = text
+
 
 
     def OnDoubleClick(self, evt):
@@ -567,7 +599,7 @@ class Principale(wx.Frame):
             self.imgORIY = self.imgORIG.GetHeight()
             self.bmpRESU = self.imgORIG.ConvertToBitmap()
             self.panneau.Affiche(self.bmpRESU, self.ratio)
-            self.SetTitle("Segmentation by Graph-Cuts [%s]"% fichier)
+            self.SetTitle("Segmentation by Graph-Cut [%s]"% fichier)
             self.barre.SetStatusText("(%s, %s) %s %%"%(self.imgORIX,
                                                        self.imgORIY, self.ratio), 1)
             
@@ -619,50 +651,53 @@ class Principale(wx.Frame):
 
         self.lamb = self.largeur_patch_picker.GetLabel()
         self.sigma = self.largeur_voisinage_picker.GetLabel()
-        self.beta = self.distance_maxi_picker.GetLabel()
-        self.force = self.force_picker.GetLabel()
+        
+        self.force_type = str(self.labels.index(self.texts_inv[self.selectedText]))
+        self.force = self.selectedText.GetLabel()
         
         
+        ##GENERAL PARAMETERS
+        #Border is back
         if self.border_background.GetValue():
             self.auto_background = "1"
         else:
             self.auto_background = "0"
 
-        if self.ballooning_checkbox.GetValue():
-            self.ballooning = "1"
-        else:
-            self.ballooning = "0"
-
+        #Object has star shape
         if self.star_shape.GetValue():
             self.star = "1"
         else:
             self.star = "0"
 
         try:
-            float(self.beta)
+            float(self.force)
         except ValueError:
-            self.beta = "-234.12"
+            self.force = "-234.12"
 
         try:
             float(self.sigma)
         except ValueError:
             self.sigma = "0"
-
-        try:
-            float(self.force)
-        except ValueError:
-            self.force = "0"
-
+        
+        print "Force type is", self.force_type, " value=", repr(self.force)
 
         #DEMARRAGE DE L'EXE
+        """
+        Paramètres envoyés:
+            - Lambda
+            - Sigma
+            - Border is back
+            - Type de la force
+            - Paramètre force
+        """
+        
         path_exe = "graphcuts.exe"
         self.pid = os.spawnv(os.P_WAIT, path_exe, ['"'+os.getcwd()+'"',
                                                    self.lamb,
                                                    self.sigma,
-                                                   self.beta,
                                                    self.auto_background,
                                                    self.star,
-                                                   self.ballooning,
+                                                   self.force_type,
                                                    self.force
                                                    ]
                              )
@@ -692,13 +727,13 @@ class Principale(wx.Frame):
 
 
 
-        
-        
+
+
 
 class GUIApp(wx.App):
     def OnInit(self):
         wx.InitAllImageHandlers()
-        fen = Principale("Segmentation by Graph-Cuts")
+        fen = Principale("Segmentation by Graph-Cut")
         fen.Show(True)
         self.SetTopWindow(fen)
         fen.OnOpen()
