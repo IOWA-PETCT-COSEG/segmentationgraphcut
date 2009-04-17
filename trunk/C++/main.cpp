@@ -270,7 +270,7 @@ int main( int argc, char *argv[]  )
 			compute_beta = true;
 	}
 
-
+	cout << "Force type=" << force_type << endl;
 	cout << "Lambda=" << lambda << endl;
 	cout << "Sigma=" << sigma << endl;
 	if (!compute_beta)
@@ -358,7 +358,7 @@ int main( int argc, char *argv[]  )
 	if (compute_beta)
 		beta = (beta_sup + beta_inf)/2;
 
-	int nb_iters = 10;
+	int nb_iters = 0;
 	int nx=w, ny=h;	// Sans les bords
 	GraphType G(nx*ny,32*nx*ny);
 
