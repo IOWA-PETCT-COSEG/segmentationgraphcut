@@ -248,7 +248,6 @@ int main( int argc, char *argv[]  )
 	double force;
 
 	bool auto_background;
-	bool ballooning;
 	bool star_shape_prior;
 	bool compute_beta = false;
 
