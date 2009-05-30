@@ -1,9 +1,0 @@
-= Instructions to use binary release =
-
-Follow these steps:
-  * Install Visual Studio 2008 libraries (vcredist_x86.exe)
-  * Launch GUI.exe
-  * Double click to set star point
-  * Click object/background points
-  * Click "Apply algorithm"
-  * The segmented image should pop-up. If not it is in the same folder under the name results.bmp
