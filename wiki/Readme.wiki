@@ -22,7 +22,7 @@ DLLs requirements for GUI.exe:
   * WSOCK32.dll - C:\WINDOWS\system32\WSOCK32.dll
   * COMCTL32.dll - C:\WINDOWS\system32\COMCTL32.dll
   * ADVAPI32.dll - C:\WINDOWS\system32\ADVAPI32.dll
-  * MSVCP71.dll - c:\python25\lib\site-packages\wx-2.8-msw-unicode\wx\MSVCP71.dll          (from [WxPython http://www.wxpython.org/download.php#binaries])
+  * MSVCP71.dll - c:\python25\lib\site-packages\wx-2.8-msw-unicode\wx\MSVCP71.dll          (from [http://www.wxpython.org/download.php#binaries WxPython ])
   * GDI32.dll - C:\WINDOWS\system32\GDI32.dll
   * WINMM.dll - C:\WINDOWS\system32\WINMM.dll
   * VERSION.dll - C:\WINDOWS\system32\VERSION.dll
