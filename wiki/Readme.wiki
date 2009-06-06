@@ -27,5 +27,5 @@ DLLs requirements for GUI.exe:
   * WINMM.dll - C:\WINDOWS\system32\WINMM.dll
   * VERSION.dll - C:\WINDOWS\system32\VERSION.dll
   * ole32.dll - C:\WINDOWS\system32\ole32.dll
-  * gdiplus.dll - c:\python25\lib\site-packages\wx-2.8-msw-unicode\wx\gdiplus.dll         (from [WxPython http://www.wxpython.org/download.php#binaries])
+  * gdiplus.dll - c:\python25\lib\site-packages\wx-2.8-msw-unicode\wx\gdiplus.dll         (from [http://www.wxpython.org/download.php#binaries WxPython ])
   * RPCRT4.dll - C:\WINDOWS\system32\RPCRT4.dll
